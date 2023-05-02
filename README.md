@@ -24,10 +24,10 @@ This engine also uses ImGUI for the engine's Graphical User Interface, this is a
 [Reshade Website.](https://reshade.me)
 
 ## Libary links
-https://github.com/ocornut/imgui - ImGUI
-https://www.glfw.org - GLFW
-https://github.com/nothings/stb - Stb image loader
-https://glad.dav1d.de - Glad
+- https://github.com/ocornut/imgui - ImGUI
+- https://www.glfw.org - GLFW
+- https://github.com/nothings/stb - Stb image loader
+- https://glad.dav1d.de - Glad
  
 # Custom Language
 
