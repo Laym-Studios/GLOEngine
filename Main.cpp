@@ -7,6 +7,9 @@
 #include<glad/glad.h>
 #include<GLFW/glfw3.h>
 #include <stb/stb_image.h>
+#include <fstream>
+#include <string>
+using namespace std;
 
 // Vertex Shader source code
 const char* vertexShaderSource = "#version 330 core\n"
@@ -208,11 +211,26 @@ int main()
 		}
 
 		ImGui::Begin("Triangle Properties");
+
+		ofstream savedColor;
+		savedColor.open("savedcolor.txt");
+		savedColor << color;
+		//while (getline(savedColor, color[i]))
+		//{
+		//	savedColor << color;
+		//}
+		savedColor.close();
+	
+
 		std::cout << "Set name for window to Triangle Properties. (ImGui)" << std::endl;
 		ImGui::Checkbox("Draw Triangle", &drawTriangle);
 		ImGui::SliderFloat("Size", &size, 0.5f, 2.0f);
 		ImGui::ColorEdit4("Color", color);
-		ImGui::Text("Debug: Application average %.3f ms/frame (&.1 FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+		if (ImGui::Button("Save scene"))
+		{
+			// save the scene
+		}
+		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 		ImGui::End();
 
 		glUseProgram(shaderProgram);
