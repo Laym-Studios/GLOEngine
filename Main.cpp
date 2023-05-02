@@ -72,7 +72,8 @@ int main()
 	images[0].width = width;
 	images[0].height = height;
 	images[0].pixels = pixels;
-	// glfwSetWindowIcon(window, 1, images);
+	// glfwSetWindowIcon(window, 1, images); Todo: Fix this.
+	std::cout << "Could not set the window icon due to the bug. (System Error)" << std::endl;
 
 	//Load GLAD so it configures OpenGL
 	gladLoadGL();
