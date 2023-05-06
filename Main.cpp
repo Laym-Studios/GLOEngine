@@ -1,75 +1,14 @@
-//------- Ignore this ----------
-#include<filesystem>
-namespace fs = std::filesystem;
-//------------------------------
 #include"imgui.h"
 #include"imgui_impl_glfw.h"
 #include"imgui_impl_opengl3.h"
 
-#include<iostream>
-#include<glad/glad.h>
-#include<GLFW/glfw3.h>
-#include<stb/stb_image.h>
-#include<glm/gtc/matrix_transform.hpp>
-#include<glm/glm.hpp>
-#include<glm/gtc/type_ptr.hpp>
-
-#include"Texture.h"
-#include"shaderClass.h"
-#include"VAO.h"
-#include"VBO.h"
-#include"EBO.h"
-#include"Camera.h"
+#include"Model.h"
 
 
 const unsigned int width = 1000;
 const unsigned int height = 1000;
 
-
-// Vertices coordinates
-GLfloat vertices[] =
-{ //     COORDINATES     /        COLORS        /    TexCoord    /       NORMALS     //
-	-1.0f, 0.0f,  1.0f,		0.0f, 0.0f, 0.0f,		0.0f, 0.0f,		0.0f, 1.0f, 0.0f,
-	-1.0f, 0.0f, -1.0f,		0.0f, 0.0f, 0.0f,		0.0f, 1.0f,		0.0f, 1.0f, 0.0f,
-	 1.0f, 0.0f, -1.0f,		0.0f, 0.0f, 0.0f,		1.0f, 1.0f,		0.0f, 1.0f, 0.0f,
-	 1.0f, 0.0f,  1.0f,		0.0f, 0.0f, 0.0f,		1.0f, 0.0f,		0.0f, 1.0f, 0.0f
-};
-
-// Indices for vertices order
-GLuint indices[] =
-{
-	0, 1, 2,
-	0, 2, 3
-};
-
-GLfloat lightVertices[] =
-{ //     COORDINATES     //
-	-0.1f, -0.1f,  0.1f,
-	-0.1f, -0.1f, -0.1f,
-	 0.1f, -0.1f, -0.1f,
-	 0.1f, -0.1f,  0.1f,
-	-0.1f,  0.1f,  0.1f,
-	-0.1f,  0.1f, -0.1f,
-	 0.1f,  0.1f, -0.1f,
-	 0.1f,  0.1f,  0.1f
-};
-
-GLuint lightIndices[] =
-{
-	0, 1, 2,
-	0, 2, 3,
-	0, 4, 7,
-	0, 7, 3,
-	3, 7, 6,
-	3, 6, 2,
-	2, 6, 5,
-	2, 5, 1,
-	1, 5, 4,
-	1, 4, 0,
-	4, 5, 6,
-	4, 6, 7
-};
-
+unsigned int samples = 8;
 
 int main()
 {
@@ -80,12 +19,13 @@ int main()
 	// In this case we are using OpenGL 3.3
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_SAMPLES, samples);
 	// Tell GLFW we are using the CORE profile
 	// So that means we only have the modern functions
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	// Create a GLFWwindow object of 1000 by 1000 pixels.
-	GLFWwindow* window = glfwCreateWindow(width, height, "LaymEngine", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(width, height, "LaymEngine - Debug", NULL, NULL);
 	// Error check if the window fails to create
 	if (window == NULL)
 	{
@@ -113,73 +53,62 @@ int main()
 
 	// Generates Shader object using shaders default.vert and default.frag
 	Shader shaderProgram("default.vert", "default.frag");
-	// Generates Vertex Array Object and binds it
-	VAO VAO1;
-	VAO1.Bind();
-	// Generates Vertex Buffer Object and links it to vertices
-	VBO VBO1(vertices, sizeof(vertices));
-	// Generates Element Buffer Object and links it to indices
-	EBO EBO1(indices, sizeof(indices));
-	// Links VBO attributes such as coordinates and colors to VAO
-	VAO1.LinkAttrib(VBO1, 0, 3, GL_FLOAT, 11 * sizeof(float), (void*)0);
-	VAO1.LinkAttrib(VBO1, 1, 3, GL_FLOAT, 11 * sizeof(float), (void*)(3 * sizeof(float)));
-	VAO1.LinkAttrib(VBO1, 2, 2, GL_FLOAT, 11 * sizeof(float), (void*)(6 * sizeof(float)));
-	VAO1.LinkAttrib(VBO1, 3, 3, GL_FLOAT, 11 * sizeof(float), (void*)(8 * sizeof(float)));
-	// Unbind all to prevent accidentally modifying them
-	VAO1.Unbind();
-	VBO1.Unbind();
-	EBO1.Unbind();
 
-
-	// Shader for light cube
-	Shader lightShader("light.vert", "light.frag");
-	// Generates Vertex Array Object and binds it
-	VAO lightVAO;
-	lightVAO.Bind();
-	// Generates Vertex Buffer Object and links it to vertices
-	VBO lightVBO(lightVertices, sizeof(lightVertices));
-	// Generates Element Buffer Object and links it to indices
-	EBO lightEBO(lightIndices, sizeof(lightIndices));
-	// Links VBO attributes such as coordinates and colors to VAO
-	lightVAO.LinkAttrib(lightVBO, 0, 3, GL_FLOAT, 3 * sizeof(float), (void*)0);
-	// Unbind all to prevent accidentally modifying them
-	lightVAO.Unbind();
-	lightVBO.Unbind();
-	lightEBO.Unbind();
-
-
-
+	// Take care of all the light related things
 	glm::vec4 lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 	glm::vec3 lightPos = glm::vec3(0.5f, 0.5f, 0.5f);
 	glm::mat4 lightModel = glm::mat4(1.0f);
 	lightModel = glm::translate(lightModel, lightPos);
 
-	glm::vec3 objectPos = glm::vec3(0.0f, 0.0f, 0.0f);
-	glm::mat4 objectModel = glm::mat4(1.0f);
-	objectModel = glm::translate(objectModel, objectPos);
-
-
-	lightShader.Activate();
-	glUniformMatrix4fv(glGetUniformLocation(lightShader.ID, "model"), 1, GL_FALSE, glm::value_ptr(lightModel));
-	glUniform4f(glGetUniformLocation(lightShader.ID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
 	shaderProgram.Activate();
-	glUniformMatrix4fv(glGetUniformLocation(shaderProgram.ID, "model"), 1, GL_FALSE, glm::value_ptr(objectModel));
 	glUniform4f(glGetUniformLocation(shaderProgram.ID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
 	glUniform3f(glGetUniformLocation(shaderProgram.ID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
 
-	Texture planksTex("planks.png", GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE);
-	planksTex.texUnit(shaderProgram, "tex0", 0);
-	Texture planksSpec("planksSpec.png", GL_TEXTURE_2D, 1, GL_RED, GL_UNSIGNED_BYTE);
-	planksSpec.texUnit(shaderProgram, "tex1", 1);
 
+	// Enables the Depth Buffer and choses which depth function to use
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+	glFrontFace(GL_CCW);
 
-	glEnable(GL_DEPTH_TEST);	
 
 	Camera camera(width, height, glm::vec3(0.0f, 0.0f, 2.0f));
+
+	Model bunny("models/bunny/scene.gltf");
+	
+	float FOV = 90.0;
+	float near = 0.1f;
+	float far = 100.0f;
+	bool vSync = false;
+
+	//bool frontFaceCull;
+	//bool backFaceCull;
+	//bool BothCull;
+
+	glUniform1f(glGetUniformLocation(shaderProgram.ID, "near"), near);
+	glUniform1f(glGetUniformLocation(shaderProgram.ID, "far"), far);
+
+	glfwSwapInterval(0);
+	
+	double prevTime = 0.0;
+	double crntTime = 0.0;
+	double timeDiff;
+	unsigned int counter = 0;
+
 
 	// Main while loop
 	while (!glfwWindowShouldClose(window))
 	{
+		crntTime = glfwGetTime();
+		timeDiff = crntTime - prevTime;
+		counter++;
+		if (timeDiff >= 1.0 / 30.0)
+		{
+			prevTime = crntTime;
+			camera.Inputs(window);
+		}
+
 		// Specify the color of the background
 		glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
 		std::cout << "specified bg color (opengl)" << std::endl;
@@ -191,20 +120,16 @@ int main()
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 
+		
+
+		
+		camera.updateMatrix(FOV, 0.1f, 100.0f);
 
 
-		camera.Inputs(window);
-		camera.updateMatrix(90.0f, 0.1f, 100.0f);
 
 		shaderProgram.Activate();
 		camera.Matrix(shaderProgram, "camMatrix");
-		planksTex.Bind();
-		planksSpec.Bind();
-		// Bind the VAO so OpenGL knows to use it
-		VAO1.Bind();
-		std::cout << "Binded VAO (opengl)" << std::endl;
-		// Draw primitives, number of indices, datatype of indices, index of indices
-		glDrawElements(GL_TRIANGLES, sizeof(indices)/sizeof(int), GL_UNSIGNED_INT, 0);
+		
 		std::cout << "Drew the elements (opengl)" << std::endl;
 
 		ImGui::Begin("Project settings");
@@ -216,6 +141,11 @@ int main()
 		{
 			camera.guiMode = false;
 		}
+		ImGui::SliderFloat("FOV", &FOV, 25.0f, 120.0f);
+		ImGui::SliderFloat("Far Clipping Plane", &far, 0.1f, 1000.0f);
+		ImGui::SliderFloat("Near Clipping Plane", &near, 0.01f, 1.0f);
+
+		
 	
 		ImGui::End();
 
@@ -241,12 +171,7 @@ int main()
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-		lightShader.Activate();
-		std::cout << "Activated shaderprogram, lightShader(opengl)" << std::endl;
-		camera.Matrix(lightShader, "camMatrix");
-		lightVAO.Bind();
-		glDrawElements(GL_TRIANGLES, sizeof(lightIndices) / sizeof(int), GL_UNSIGNED_INT, 0);
-
+		bunny.Draw(shaderProgram, camera);
 
 		// Swap the back buffer with the front buffer
 		glfwSwapBuffers(window);
@@ -260,11 +185,6 @@ int main()
 
 
 	// Delete all the objects we've created
-	VAO1.Delete();
-	VBO1.Delete();
-	EBO1.Delete();
-	planksTex.Delete();
-	planksSpec.Delete();
 	shaderProgram.Delete();
 	// Delete window before ending the program
 	glfwDestroyWindow(window);
