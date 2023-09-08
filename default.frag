@@ -1,7 +1,8 @@
 #version 330 core
 
 // Outputs colors in RGBA
-out vec4 FragColor;
+layout (location = 0) out vec4 FragColor;
+layout (location = 1) out vec4 BloomColor;
 
 // Imports the current position from the Vertex Shader
 in vec3 crntPos;
@@ -11,12 +12,14 @@ in vec3 Normal;
 in vec3 color;
 // Imports the texture coordinates from the Vertex Shader
 in vec2 texCoord;
+in vec4 fragPosLight;
 
 
 
 // Gets the Texture Units from the main function
 uniform sampler2D diffuse0;
 uniform sampler2D specular0;
+uniform sampler2D shadowMap;
 // Gets the color of the light from the main function
 uniform vec4 lightColor;
 // Gets the position of the light from the main function
@@ -63,7 +66,7 @@ vec4 direcLight()
 	float ambient = 0.20f;
 
 	// diffuse lighting
-	vec3 normal = normalize(Normal);
+	vec3 normal = normalize(texture(normal0, texCoord).xyz * 2.0f - 1.0f);
 	vec3 lightDirection = normalize(vec3(1.0f, 1.0f, 0.0f));
 	float diffuse = max(dot(normal, lightDirection), 0.0f);
 
@@ -74,7 +77,34 @@ vec4 direcLight()
 	float specAmount = pow(max(dot(viewDirection, reflectionDirection), 0.0f), 16);
 	float specular = specAmount * specularLight;
 
-	return (texture(diffuse0, texCoord) * (diffuse + ambient) + texture(specular0, texCoord).r * specular) * lightColor;
+	float shadow = 0.0f;
+	vec3 lightCoords = fragPosLight.xyz / fragPosLight.w;
+	if(lightCoords.z <= 1.0f)
+	{
+		lightCoords = (lightCoords + 1.0f) / 2.0f;
+
+		float closestDepth = texture(shadowMap, lightCoords.xy).r;
+		float currentDepth = lightCoords.z;
+		float bias = max(0.025f * (1.0f - dot(normal, lightDirection)), 0.0005f);
+		
+		int sampleRadius = 2;
+		vec2 pixelSize = 1.0 / textureSize(shadowMap, 0);
+		for(int y = -sampleRadius; y <= sampleRadius; x++)
+		{
+			for(int x = -sampleRadius; x <= sampleRadius; x++)
+			{
+				float closestDepth = texture(shadowMap, lightCoords.xy + vec2(x, y) * pixelSize).r;
+				if(currentDepth > closestDepth + bias)
+				{
+					shadow += 1.0f;
+				}
+			}
+		}
+
+		shadow /= pow((sampleRadius * 2 + 1), 2);
+	}
+
+	return (texture(diffuse0, texCoord) * (diffuse * (1.0f - shadow) + ambient) + texture(specular0, texCoord).r * specular * (1.0f - shadow)) * lightColor;
 }
 
 vec4 spotLight()
@@ -105,8 +135,8 @@ vec4 spotLight()
 	return (texture(diffuse0, texCoord) * (diffuse * inten + ambient) + texture(specular0, texCoord).r * specular * inten) * lightColor;
 }
 
-float near = 0.1f;
-float far = 100.0f;
+float near = 0.001f;
+float far = 1000000.0f;
 
 float linearizeDepth(float depth)
 {
@@ -123,5 +153,24 @@ void main()
 {
 	// outputs final color
 	float depth = logisticDepth(gl_FragCoord.z);
-	FragColor = pointLight() * (1.0f - depth) + vec4(depth * vec3(0.85f, 0.85f, 0.90f), 1.0f);
+	FragColor = direcLight() * (1.0f - depth) + vec4(depth * vec3(0.5f, 0.5f, 0.5f), 1.0f);
+
+	if(FragColor.r > 0.05f)
+	{
+		FragColor.r *= 5.0f;
+	}
+		if(FragColor.g > 0.05f)
+	{
+		FragColor.g *= 5.0f;
+	}
+		if(FragColor.b > 0.05f)
+	{
+		FragColor.b *= 5.0f;
+	}
+
+	float brightness = dot(FragColor.rgb, vec3(0.2126f, 0.7152f, 0.0722f));
+	if(brightness > 0.15f)
+		BloomColor = vec4(FragColor.rgb, 1.0f);
+	else
+		BloomColor = vec4(0.0f, 0.0f, 0.0, 1.0f);
 }
