@@ -1,4 +1,5 @@
 #include"Camera.h"
+#include"Console.cpp"
 
 Camera::Camera(int width, int height, glm::vec3 postion)
 {
@@ -58,7 +59,7 @@ void Camera::Inputs(GLFWwindow* window)
 		speed = 0.1f;
 	}
 
-	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
 	{
 		if (!guiMode)
 		{
@@ -93,10 +94,15 @@ void Camera::Inputs(GLFWwindow* window)
 
 
 	}
-	else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE)
+	else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_RELEASE)
 	{
 		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 		firstClick = true;
+	}
+
+	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+	{
+		Console("Left Click!");
 	}
 
 }

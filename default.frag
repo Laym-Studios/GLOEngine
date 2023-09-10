@@ -63,10 +63,10 @@ vec4 pointLight()
 vec4 direcLight()
 {
 	// ambient lighting
-	float ambient = 0.20f;
+	float ambient = 0.10f;
 
 	// diffuse lighting
-	vec3 normal = normalize(texture(normal0, texCoord).xyz * 2.0f - 1.0f);
+	vec3 normal = normalize(Normal);
 	vec3 lightDirection = normalize(vec3(1.0f, 1.0f, 0.0f));
 	float diffuse = max(dot(normal, lightDirection), 0.0f);
 
@@ -89,7 +89,7 @@ vec4 direcLight()
 		
 		int sampleRadius = 2;
 		vec2 pixelSize = 1.0 / textureSize(shadowMap, 0);
-		for(int y = -sampleRadius; y <= sampleRadius; x++)
+		for(int y = -sampleRadius; y <= sampleRadius; y++)
 		{
 			for(int x = -sampleRadius; x <= sampleRadius; x++)
 			{
@@ -104,7 +104,7 @@ vec4 direcLight()
 		shadow /= pow((sampleRadius * 2 + 1), 2);
 	}
 
-	return (texture(diffuse0, texCoord) * (diffuse * (1.0f - shadow) + ambient) + texture(specular0, texCoord).r * specular * (1.0f - shadow)) * lightColor;
+	return (texture(diffuse0, texCoord) * (diffuse * (1.0f - shadow) + ambient) + texture(specular0, texCoord).r * specular ) * lightColor;
 }
 
 vec4 spotLight()
@@ -140,10 +140,10 @@ float far = 1000000.0f;
 
 float linearizeDepth(float depth)
 {
-	return (2.0 * near * far) / (far + near - (depth * 2.0 - 1.0) * (far - near));
+	return (1.0 * near * far) / (far + near - (depth * 2.0 - 1.0) * (far - near));
 }
 
-float logisticDepth(float depth, float steepness = 0.5f, float offset = 5.0f)
+float logisticDepth(float depth, float steepness = 0.25f, float offset = 7.5f)
 {
 	float zVal = linearizeDepth(depth);
 	return (1 / (1 + exp(-steepness * (zVal - offset))));

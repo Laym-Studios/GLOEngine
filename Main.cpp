@@ -6,6 +6,8 @@ namespace fs = std::filesystem;
 #include"imgui_impl_opengl3.h"
 
 #include"Model.h"
+#include"Hierachy.cpp"
+#include"Console.cpp"
 
 
 const unsigned int width = 1000;
@@ -77,7 +79,7 @@ int main()
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	// Create a GLFWwindow object of 1000 by 1000 pixels.
-	GLFWwindow* window = glfwCreateWindow(width, height, "LaymEngine - Closed Beta", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(width, height, "GLOEngine - Closed Beta", NULL, NULL);
 	// Error check if the window fails to create
 	if (window == NULL)
 	{
@@ -113,7 +115,7 @@ int main()
 	glUniform1i(glGetUniformLocation(framebufferProgram.ID, "screenTexture"), 1);
 	skyboxShader.Activate();
 	glUniform1i(glGetUniformLocation(skyboxShader.ID, "skybox"), 1);
-	glUniform1i(glGetUniformLocation(framebufferProgram.ID, "gamma"), gamma);
+	//glUniform1i(glGetUniformLocation(framebufferProgram.ID, "gamma"), gamma);
 
 
 	// Create Frame Buffer Object
@@ -171,6 +173,8 @@ int main()
 	Camera camera(width, height, glm::vec3(0.0f, 0.0f, 2.0f));
 
 	Model grindstone("models/grindstone/scene.gltf");
+	Hierachy("grindstone");
+	Console("Created Item! with name: grindstone");
 
 	//Model planks("models/planks/planks.gltf");
 
@@ -258,7 +262,7 @@ int main()
 			(
 				GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
 				0,
-				GL_RGB,
+				GL_SRGB_ALPHA,
 				width,
 				height,
 				0,
@@ -328,26 +332,8 @@ int main()
 			}
 			
 		}
-		ImGui_ImplOpenGL3_NewFrame();
-		ImGui_ImplGlfw_NewFrame();
-		ImGui::NewFrame();
 
-		ImGui::Begin("My Scene");
-
-		glViewport(0, 0, width, height);
-
-		ImVec2 pos = ImGui::GetCursorScreenPos();
-
-		ImGui::GetWindowDrawList()->AddImage(
-			(void*)framebufferTexture,
-			ImVec2(pos.x, pos.y),
-			ImVec2(pos.x + width, pos.y + height),
-			ImVec2(0, 1),
-			ImVec2(1, 0)
-		);	
-
-		ImGui::End();
-		ImGui::Render();
+		
 
 		// Enable depth testing since it's disabled when drawing the framebuffer rectangle
 		glEnable(GL_DEPTH_TEST);
@@ -418,16 +404,19 @@ int main()
 		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
 		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
-
-
-
+		
+		
 		
 
 		// Switch back to the normal depth function
 		glDepthFunc(GL_LESS);
 
+
+
 		// Bind the default framebuffer
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
 		// Draw the framebuffer rectangle
 		framebufferProgram.Activate();
 		glBindVertexArray(rectVAO);
@@ -436,16 +425,36 @@ int main()
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		glDisable(GL_DEPTH_TEST);
 		glDepthFunc(GL_LESS);
-		glEnable(GL_MULTISAMPLE);
 		glDisable(GL_CULL_FACE);
 		glCullFace(GL_FRONT);
 		glFrontFace(GL_CCW);
+
+		ImGui_ImplOpenGL3_NewFrame(); // imgui doesnt work in 3d space for some reason.
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
+
+		ImGui::Begin("GameWindow");
+		{
+			// Using a Child allow to fill all the space of the window.
+			// It also alows customization
+			ImGui::BeginChild("GameRender");
+			// Get the size of the child (i.e. the whole draw size of the windows).
+			ImVec2 wsize = ImGui::GetWindowSize();
+			// Because I use the texture from OpenGL, I need to invert the V from the UV.
+			ImGui::Image((ImTextureID)framebufferTexture, wsize, ImVec2(0, 1), ImVec2(1, 0));
+			ImGui::EndChild();
+		}
+		ImGui::End();
+		ImGui::Render();
+
 
 		// Swap the back buffer with the front buffer
 		glfwSwapBuffers(window);
 		// Take care of all GLFW events
 		glfwPollEvents();
 	}
+
+	
 
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
